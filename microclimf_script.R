@@ -12,7 +12,6 @@ dtm_10m <- rast('dtm_10m.tif')
 veg_10m <- readRDS('Microclimf/veg_10m.rds')
 soil_10m <- readRDS('Microclimf/soil_10m.rds')
 
-weather_data_hourly <- read.csv("Microclimf/weather_data_hourly.csv")
 
 #2- Loop model step by step ────────────────────────────────────────────────────
 
