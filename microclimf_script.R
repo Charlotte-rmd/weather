@@ -3,7 +3,6 @@ library(microclimf)
 library(terra)
 library(dplyr)
 
-setwd("~/Desktop/Internship_Oxford")
 
 
 # 1- Import data ───────────────────────────────────────────────────────────────
@@ -43,8 +42,10 @@ while (a < 20634) {
   
   saveRDS(micro_airtemp_10m, file = paste0("Microclimate_10m/microclimate_10m_", count, ".rds"))
   
-  print(paste0("One file more : ", count, "/20634"))
-  
   count <- count + 1
-  a <- a + b
+  a <- a + b 
+  
+  print(paste0("One file more : ", a, "/20634"))
+  
+
 }
