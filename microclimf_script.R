@@ -19,7 +19,7 @@ weather_data_hourly <- read.csv("Microclimf/weather_data_hourly.csv")
 dir.create("Microclimate_10m", showWarnings = FALSE)
 
 a <- 1
-b <- 200
+b <- 500
 count <- 1
 
 while (a < 20634) {
