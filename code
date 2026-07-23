@@ -40,6 +40,32 @@ all_rasters <- lapply(files, read_one_file)
 r_full <- rast(all_rasters)   # merges all layers from all files, in order
 
 r_full
+
+
+
+
+
+
+
+
+
+
+
+library(terra)
+
+# template raster matching Tz1's geometry
+template <- rast(nrows = 303, ncols = 360, xmin = 0, xmax = 360, ymin = 0, ymax = 303)
+
+# convert each list element into a SpatRaster layer
+layers <- lapply(test, function(x) {
+  m <- matrix(x, nrow = 303, ncol = 360, byrow = TRUE)  # adjust byrow if needed
+  r <- template
+  values(r) <- m
+  r
+})
+
+r_one_file <- rast(layers)   # combine the 11 layers from this file
+r_one_file
 nlyr(r_full)   # total number of layers across all 100 filesl)   # total number of layers across all 100 files
 
 
