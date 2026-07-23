@@ -1,71 +1,40 @@
+library(terra)
 
-# List all .rds files
+# --- 1. List and numerically sort all files ---
 files <- list.files(path = "Microclimate_10m_Fv", 
-                    pattern = "microclimate_10m_.*\\.rds$", 
-                    full.names = TRUE)
-
+                     pattern = "microclimate_10m_.*\\.rds$", 
+                     full.names = TRUE)
 
 nums <- as.numeric(gsub(".*_([0-9]+)\\.rds$", "\\1", files))
 files <- files[order(nums)]
-files  # check the order
-library(terra)
 
-library(terra)
-
-read_one_file <- function(f) {
-  obj <- readRDS(f)
-  
-  # if it's a single wrapped SpatRaster
-  if (inherits(obj, "PackedSpatRaster")) {
-    return(unwrap(obj))
-  }
-  
-  # if it's a list of SpatRasters (possibly wrapped)
-  if (is.list(obj)) {
-    obj <- lapply(obj, function(x) {
-      if (inherits(x, "PackedSpatRaster")) unwrap(x) else x
-    })
-    return(rast(obj))  # combine list into one multi-layer SpatRaster
-  }
-  
-  return(obj)  # already a SpatRaster
-}
-
-# make sure files are sorted numerically (from before)
-nums <- as.numeric(gsub(".*_([0-9]+)\\.rds$", "\\1", files))
-files <- files[order(nums)]
-
-# read and combine everything
-all_rasters <- lapply(files, read_one_file)
-r_full <- rast(all_rasters)   # merges all layers from all files, in order
-
-r_full
-
-
-
-
-
-
-
-
-
-
-
-library(terra)
-
-# template raster matching Tz1's geometry
+# --- 2. Template raster matching Tz1's geometry ---
 template <- rast(nrows = 303, ncols = 360, xmin = 0, xmax = 360, ymin = 0, ymax = 303)
 
-# convert each list element into a SpatRaster layer
-layers <- lapply(test, function(x) {
-  m <- matrix(x, nrow = 303, ncol = 360, byrow = TRUE)  # adjust byrow if needed
-  r <- template
-  values(r) <- m
-  r
-})
+# --- 3. Function: read one file, reshape all 11 elements into layers ---
+read_one_file <- function(f) {
+  test <- readRDS(f)
+  
+  layers <- lapply(test, function(x) {
+    m <- matrix(x, nrow = 303, ncol = 360, byrow = TRUE)  # adjust byrow if orientation looks wrong
+    r <- template
+    values(r) <- m
+    r
+  })
+  
+  rast(layers)  # combine this file's 11 layers into one multi-layer SpatRaster
+}
 
-r_one_file <- rast(layers)   # combine the 11 layers from this file
-r_one_file
-nlyr(r_full)   # total number of layers across all 100 filesl)   # total number of layers across all 100 files
+# --- 4. Apply to every file, with progress feedback ---
+all_stacks <- vector("list", length(files))
 
+for (i in seq_along(files)) {
+  all_stacks[[i]] <- read_one_file(files[i])
+  cat("Processed file", i, "/", length(files), "\n")
+}
 
+# --- 5. Combine everything into one big SpatRaster (all layers, all files, in order) ---
+r_full <- rast(all_stacks)
+
+r_full
+nlyr(r_full)   # should be 100 * 11 = 1100 (if every file has exactly 11 layers)
