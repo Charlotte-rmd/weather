@@ -1,40 +1,22 @@
-library(terra)
-
-# --- 1. List and numerically sort all files ---
-files <- list.files(path = "Microclimate_10m_Fv", 
-                     pattern = "microclimate_10m_.*\\.rds$", 
-                     full.names = TRUE)
-
-nums <- as.numeric(gsub(".*_([0-9]+)\\.rds$", "\\1", files))
-files <- files[order(nums)]
-
-# --- 2. Template raster matching Tz1's geometry ---
-template <- rast(nrows = 303, ncols = 360, xmin = 0, xmax = 360, ymin = 0, ymax = 303)
-
-# --- 3. Function: read one file, reshape all 11 elements into layers ---
-read_one_file <- function(f) {
-  test <- readRDS(f)
-  
-  layers <- lapply(test, function(x) {
-    m <- matrix(x, nrow = 303, ncol = 360, byrow = TRUE)  # adjust byrow if orientation looks wrong
-    r <- template
-    values(r) <- m
-    r
-  })
-  
-  rast(layers)  # combine this file's 11 layers into one multi-layer SpatRaster
-}
-
-# --- 4. Apply to every file, with progress feedback ---
-all_stacks <- vector("list", length(files))
+check_info <- data.frame(
+  file = files,
+  n_elements = NA,
+  lengths_ok = NA
+)
 
 for (i in seq_along(files)) {
-  all_stacks[[i]] <- read_one_file(files[i])
-  cat("Processed file", i, "/", length(files), "\n")
+  test <- tryCatch(readRDS(files[i]), error = function(e) NULL)
+  
+  if (is.null(test)) {
+    check_info$n_elements[i] <- NA
+    check_info$lengths_ok[i] <- FALSE
+    next
+  }
+  
+  check_info$n_elements[i] <- length(test)
+  lens <- sapply(test, length)
+  check_info$lengths_ok[i] <- all(lens == 303*360)
 }
 
-# --- 5. Combine everything into one big SpatRaster (all layers, all files, in order) ---
-r_full <- rast(all_stacks)
-
-r_full
-nlyr(r_full)   # should be 100 * 11 = 1100 (if every file has exactly 11 layers)
+# Show any problem files
+check_info[!check_info$lengths_ok | check_info$n_elements != 11, ]
