@@ -1,0 +1,45 @@
+
+# List all .rds files
+files <- list.files(path = "Microclimate_10m_Fv", 
+                    pattern = "microclimate_10m_.*\\.rds$", 
+                    full.names = TRUE)
+
+
+nums <- as.numeric(gsub(".*_([0-9]+)\\.rds$", "\\1", files))
+files <- files[order(nums)]
+files  # check the order
+library(terra)
+
+library(terra)
+
+read_one_file <- function(f) {
+  obj <- readRDS(f)
+  
+  # if it's a single wrapped SpatRaster
+  if (inherits(obj, "PackedSpatRaster")) {
+    return(unwrap(obj))
+  }
+  
+  # if it's a list of SpatRasters (possibly wrapped)
+  if (is.list(obj)) {
+    obj <- lapply(obj, function(x) {
+      if (inherits(x, "PackedSpatRaster")) unwrap(x) else x
+    })
+    return(rast(obj))  # combine list into one multi-layer SpatRaster
+  }
+  
+  return(obj)  # already a SpatRaster
+}
+
+# make sure files are sorted numerically (from before)
+nums <- as.numeric(gsub(".*_([0-9]+)\\.rds$", "\\1", files))
+files <- files[order(nums)]
+
+# read and combine everything
+all_rasters <- lapply(files, read_one_file)
+r_full <- rast(all_rasters)   # merges all layers from all files, in order
+
+r_full
+nlyr(r_full)   # total number of layers across all 100 filesl)   # total number of layers across all 100 files
+
+
